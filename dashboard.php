@@ -102,6 +102,7 @@ $activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'personal';
             <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
                 <h2 class="text-lg font-semibold mb-4">Dosya Yükle</h2>
                 <form id="uploadForm" action="upload.php" method="POST" enctype="multipart/form-data">
+                    <?php echo getCSRFTokenField(); ?>
                     <div class="upload-area p-8 rounded-lg text-center cursor-pointer mb-4">
                         <input type="file" id="fileInput" name="file" class="hidden" multiple>
                         <div class="text-gray-500">
@@ -137,7 +138,8 @@ $activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'personal';
                     foreach ($files as $file):
                         $isFolder = pathinfo($file['filename'], PATHINFO_EXTENSION) === '';
                     ?>
-                    <div class="border rounded-lg p-4 hover:shadow-md transition duration-150 relative group">
+                    <div class="border rounded-lg p-4 hover:shadow-md transition duration-150 relative group file-item" 
+                         data-file-id="<?php echo $file['id']; ?>">
                         <div class="flex items-start justify-between">
                             <div class="flex items-center">
                                 <i class="<?php echo $isFolder ? 'fas fa-folder text-yellow-400' : 'fas fa-file text-blue-400'; ?> text-2xl mr-3"></i>
@@ -175,7 +177,7 @@ $activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'personal';
     </div>
 
     <!-- Mobil Dosya Detay Modal -->
-    <div id="fileDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div id="fileDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 md:hidden">
         <div class="bg-white rounded-lg p-6 m-4 max-w-sm w-full">
             <div id="fileDetailContent"></div>
             <div class="mt-4 flex justify-end">
@@ -235,20 +237,45 @@ $activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'personal';
             fetch(`file_detail.php?id=${fileId}`)
                 .then(response => response.json())
                 .then(data => {
-                    content.innerHTML = `
-                        <h3 class="text-lg font-semibold mb-2">${data.filename}</h3>
-                        <p><strong>Boyut:</strong> ${data.filesize}</p>
-                        <p><strong>Yükleyen:</strong> ${data.uploader}</p>
-                        <p><strong>Tarih:</strong> ${data.upload_date}</p>
-                        <div class="mt-4">
-                            <a href="download.php?id=${data.id}" class="bg-blue-600 text-white px-4 py-2 rounded-md block text-center">
+                    if (data.error) {
+                        content.innerHTML = `
+                            <div class="text-red-600">
+                                <i class="fas fa-exclamation-circle mr-2"></i>${data.error}
+                            </div>
+                        `;
+                    } else {
+                        const downloadBtn = `
+                            <a href="download.php?id=${data.id}" class="bg-blue-600 text-white px-4 py-2 rounded-md block text-center mb-2">
                                 <i class="fas fa-download mr-2"></i>İndir
                             </a>
-                            ${data.is_folder ? `
-                            <a href="browse.php?id=${data.id}" class="mt-2 bg-green-600 text-white px-4 py-2 rounded-md block text-center">
+                        `;
+
+                        const browseBtn = data.is_folder ? `
+                            <a href="browse.php?path=${encodeURIComponent(data.filepath)}" class="bg-green-600 text-white px-4 py-2 rounded-md block text-center">
                                 <i class="fas fa-folder-open mr-2"></i>Aç
                             </a>
-                            ` : ''}
+                        ` : '';
+
+                        content.innerHTML = `
+                            <h3 class="text-lg font-semibold mb-2">${data.filename}</h3>
+                            <div class="space-y-2 mb-4">
+                                <p><strong>Boyut:</strong> ${data.filesize}</p>
+                                <p><strong>Yükleyen:</strong> ${data.uploader}</p>
+                                <p><strong>Tarih:</strong> ${data.upload_date}</p>
+                                <p><strong>Tür:</strong> ${data.is_common ? 'Ortak' : 'Kişisel'}</p>
+                            </div>
+                            <div class="mt-4">
+                                ${downloadBtn}
+                                ${browseBtn}
+                            </div>
+                        `;
+                    }
+                    modal.style.display = 'flex';
+                })
+                .catch(error => {
+                    content.innerHTML = `
+                        <div class="text-red-600">
+                            <i class="fas fa-exclamation-circle mr-2"></i>Dosya bilgileri alınamadı
                         </div>
                     `;
                     modal.style.display = 'flex';
@@ -259,15 +286,18 @@ $activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'personal';
             document.getElementById('fileDetailModal').style.display = 'none';
         }
 
-        // Mobil cihaz kontrolü ve dokunma olayı
-        if ('ontouchstart' in window) {
-            document.querySelectorAll('.file-item').forEach(item => {
+        // Mobil cihaz için dokunma olayı
+        document.querySelectorAll('.file-item').forEach(item => {
+            if ('ontouchstart' in window) {
                 item.addEventListener('click', (e) => {
-                    const fileId = item.dataset.fileId;
-                    showFileDetail(fileId);
+                    if (!e.target.closest('a')) { // Eğer tıklanan yer bir link değilse
+                        e.preventDefault();
+                        const fileId = item.dataset.fileId;
+                        showFileDetail(fileId);
+                    }
                 });
-            });
-        }
+            }
+        });
     </script>
 </body>
 </html>
