@@ -11,6 +11,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCSRFToken();
 }
 
+// Dosya yükleme ayarlarını güncelle
+if (isset($_POST['update_upload_settings'])) {
+    $maxUploadSize = (int)$_POST['max_upload_size'] * 1024 * 1024; // MB'yi byte'a çevir
+    $allowedExtensions = cleanInput($_POST['allowed_extensions']);
+    
+    $configFile = file_get_contents('config.php');
+    
+    // Maksimum dosya boyutunu güncelle
+    if ($maxUploadSize > 0) {
+        $configFile = preg_replace(
+            "/define\('MAX_UPLOAD_SIZE',\s*[^;]+;/",
+            "define('MAX_UPLOAD_SIZE', " . $maxUploadSize . "); // " . formatFileSize($maxUploadSize),
+            $configFile
+        );
+    }
+    
+    // İzin verilen uzantıları güncelle
+    if (!empty($allowedExtensions)) {
+        $configFile = preg_replace(
+            "/define\('ALLOWED_EXTENSIONS',\s*'[^']*'\);/",
+            "define('ALLOWED_EXTENSIONS', '" . $allowedExtensions . "');",
+            $configFile
+        );
+    }
+    
+    file_put_contents('config.php', $configFile);
+    $messages[] = ['type' => 'success', 'text' => 'Dosya yükleme ayarları güncellendi.'];
+}
+
 // Site ayarlarını güncelle
 if (isset($_POST['update_site_settings'])) {
     $siteTitle = cleanInput($_POST['site_title']);
@@ -206,6 +235,32 @@ $files = $conn->query("
                         <button type="submit" name="update_site_settings" 
                                 class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-150">
                             Ayarları Güncelle
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Dosya Yükleme Ayarları -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h2 class="text-lg font-semibold mb-4">Dosya Yükleme Ayarları</h2>
+                <form method="POST">
+                    <?php echo getCSRFTokenField(); ?>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Maksimum Dosya Boyutu (MB)</label>
+                            <input type="number" name="max_upload_size" value="<?php echo (MAX_UPLOAD_SIZE / 1024 / 1024); ?>" 
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <p class="mt-1 text-sm text-gray-500">Mevcut limit: <?php echo formatFileSize(MAX_UPLOAD_SIZE); ?></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">İzin Verilen Dosya Uzantıları</label>
+                            <input type="text" name="allowed_extensions" value="<?php echo ALLOWED_EXTENSIONS; ?>" 
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <p class="mt-1 text-sm text-gray-500">Virgülle ayırarak yazın (örn: jpg,png,pdf)</p>
+                        </div>
+                        <button type="submit" name="update_upload_settings" 
+                                class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-150">
+                            Yükleme Ayarlarını Güncelle
                         </button>
                     </div>
                 </form>
