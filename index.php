@@ -52,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php echo showMessages(); ?>
 
         <form method="POST" class="space-y-6">
+            <?php echo getCSRFTokenField(); ?>
             <div>
                 <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
                     Kullanıcı Adı
