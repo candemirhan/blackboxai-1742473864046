@@ -1,0 +1,43 @@
+# Dizin listelemeyi kapat
+Options -Indexes
+
+# PHP hata gösterimini kapat
+php_flag display_errors off
+
+# Güvenlik başlıkları
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-Content-Security-Policy "default-src 'self'"
+</IfModule>
+
+# Config dosyasına direkt erişimi engelle
+<Files "config.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# PHP dosyalarını includes klasöründen direkt çalıştırmayı engelle
+<FilesMatch "^.*\.php$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "^(index|dashboard|admin|upload|download|browse|file_detail|logout|error)\.php$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Hata sayfalarını yönlendir
+ErrorDocument 400 /error.php?code=400
+ErrorDocument 401 /error.php?code=401
+ErrorDocument 403 /error.php?code=403
+ErrorDocument 404 /error.php?code=404
+ErrorDocument 500 /error.php?code=500
+
+# URL yeniden yazma kuralları
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ error.php?code=404 [L]
