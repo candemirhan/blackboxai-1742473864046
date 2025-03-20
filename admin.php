@@ -6,6 +6,11 @@ checkAdmin();
 // İşlem mesajları
 $messages = [];
 
+// POST işlemlerinde CSRF kontrolü
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    checkCSRFToken();
+}
+
 // Site ayarlarını güncelle
 if (isset($_POST['update_site_settings'])) {
     $siteTitle = cleanInput($_POST['site_title']);
@@ -181,6 +186,7 @@ $files = $conn->query("
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h2 class="text-lg font-semibold mb-4">Site Ayarları</h2>
                 <form method="POST" enctype="multipart/form-data">
+                    <?php echo getCSRFTokenField(); ?>
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Site Başlığı</label>
@@ -209,6 +215,7 @@ $files = $conn->query("
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h2 class="text-lg font-semibold mb-4">FTP Ayarları</h2>
                 <form method="POST">
+                    <?php echo getCSRFTokenField(); ?>
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">FTP Sunucu</label>
@@ -244,6 +251,7 @@ $files = $conn->query("
                 
                 <!-- Yeni Kullanıcı Ekle -->
                 <form method="POST" class="mb-6">
+                    <?php echo getCSRFTokenField(); ?>
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Kullanıcı Adı</label>
@@ -316,6 +324,7 @@ $files = $conn->query("
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <form method="POST" class="inline-block">
+                                        <?php echo getCSRFTokenField(); ?>
                                         <input type="hidden" name="file_id" value="<?php echo $file['id']; ?>">
                                         <button type="submit" name="delete_file" 
                                                 class="text-red-600 hover:text-red-900"
