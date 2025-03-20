@@ -134,6 +134,29 @@ function setSuccess($message) {
     $_SESSION[SESSION_PREFIX.'success'] = $message;
 }
 
+// CSRF token oluştur
+function generateCSRFToken() {
+    if (!isset($_SESSION[SESSION_PREFIX.'csrf_token'])) {
+        $_SESSION[SESSION_PREFIX.'csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION[SESSION_PREFIX.'csrf_token'];
+}
+
+// CSRF token input alanı oluştur
+function getCSRFTokenField() {
+    return '<input type="hidden" name="csrf_token" value="' . generateCSRFToken() . '">';
+}
+
+// CSRF token kontrolü
+function checkCSRFToken() {
+    if (!isset($_POST['csrf_token']) || !isset($_SESSION[SESSION_PREFIX.'csrf_token']) || 
+        $_POST['csrf_token'] !== $_SESSION[SESSION_PREFIX.'csrf_token']) {
+        setError("Güvenlik doğrulaması başarısız.");
+        header("Location: " . $_SERVER['HTTP_REFERER'] ?? 'index.php');
+        exit();
+    }
+}
+
 // Mesajları göster ve temizle
 function showMessages() {
     $output = '';
